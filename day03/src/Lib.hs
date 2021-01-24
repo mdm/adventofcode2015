@@ -11,8 +11,10 @@ translate '>' = (1, 0)
 translate '^' = (0, -1)
 translate 'v' = (0, 1)
 
+move :: (Int, Int) -> (Int, Int) -> (Int, Int)
 move (x, y) (a, b) = (x + a, y + b)
 
+partition :: [a] -> ([a], [a])
 partition = partition' [] []
     where partition' ys zs [] = (reverse ys, reverse zs)
           partition' ys zs (x:xs) = partition' (x:zs) ys xs
