@@ -8,7 +8,7 @@ import Text.Parsec (char, string, parse)
 import Text.Parsec.Char (digit, space)
 import Text.Parsec.Combinator (choice, many1)
 import Text.Parsec.Prim (try)
-import Data.Set (Set, empty, fromList, intersection, union, (\\), partition, member)
+import Data.Array (Array, (//), (!), array, elems, range)
 
 data Rectangle = Rectangle (Int, Int) (Int, Int)
     deriving Show
@@ -54,16 +54,22 @@ parseCommand = do
                  r <- parseRectangle
                  return $ a r
 
-lights (Rectangle (x0, y0) (x1, y1)) = fromList [(x, y) | y <- [y0..y1], x <- [x0..x1]]
+lights (Rectangle topLeft bottomRight) = range (topLeft, bottomRight)
 
-execute :: Set (Int, Int) -> Command -> Set (Int, Int)
-execute xs (TurnOn r) = xs `union` lights r
-execute xs (TurnOff r) = xs \\ lights r
-execute xs (Toggle r) = xs `union` off \\ on
-    where (on, off) = partition (`member` xs) $ lights r
+grid = array ((0, 0), (999, 999)) [(i, 0) | i <- range ((0, 0), (999, 999))]
+
+execute1 :: Array (Int, Int) Int -> Command -> Array (Int, Int) Int
+execute1 xs (TurnOn r) = xs // [(i, 1) | i <- lights r]
+execute1 xs (TurnOff r) = xs // [(i, 0) | i <- lights r]
+execute1 xs (Toggle r) = xs // [(i, 1 - xs!i) | i <- lights r]
 
 part1 :: String -> String
-part1 = show . length . foldl execute empty . map (either undefined id . parse parseCommand "") . lines
+part1 = show . length . filter (/=0) . elems . foldl execute1 grid . map (either undefined id . parse parseCommand "") . lines
+
+execute2 :: Array (Int, Int) Int -> Command -> Array (Int, Int) Int
+execute2 xs (TurnOn r) = xs // [(i, xs!i + 1) | i <- lights r]
+execute2 xs (TurnOff r) = xs // [(i, max 0 $ xs!i - 1) | i <- lights r]
+execute2 xs (Toggle r) = xs // [(i, xs!i + 2) | i <- lights r]
 
 part2 :: String -> String
-part2 = const ""
+part2 = show . sum . elems . foldl execute2 grid . map (either undefined id . parse parseCommand "") . lines

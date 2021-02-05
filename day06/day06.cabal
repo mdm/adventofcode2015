@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b66fac28804791ae172ddbf113529f4ea77aa7fa519d02c6e58074aef55745a0
+-- hash: d2c2059686198acd86da5707f6abb2cc59e41dd140f9a146877c8a905986e317
 
 name:           day06
 version:        0.1.0.0
@@ -33,8 +33,8 @@ library
   hs-source-dirs:
       src
   build-depends:
-      base >=4.7 && <5
-    , containers
+      array
+    , base >=4.7 && <5
     , parsec
   default-language: Haskell2010
 
@@ -46,8 +46,8 @@ executable day06-exe
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
-    , containers
+      array
+    , base >=4.7 && <5
     , day06
     , parsec
   default-language: Haskell2010
@@ -61,8 +61,8 @@ test-suite day06-test
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
-    , containers
+      array
+    , base >=4.7 && <5
     , day06
     , parsec
   default-language: Haskell2010
