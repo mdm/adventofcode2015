@@ -104,10 +104,10 @@ resolve (x:xs, resolved) | resolvable x resolved = (xs, insertResolution x restR
 evaluate :: [(String, Instruction)] -> Map String Int
 evaluate is = snd $ until (null . fst) resolve (is, Map.empty)
 
-part1 :: String -> String
-part1 = show . flip (Map.!) "a" . evaluate . map (either undefined id . parse parseInstruction "") . lines
--- part1 = show . map (parse parseInstruction "") . lines
+compute1 = flip (Map.!) "a" . evaluate . map (either undefined id . parse parseInstruction "") . lines
 
+part1 :: String -> String
+part1 = show . compute1
 
 part2 :: String -> String
-part2 = const ""
+part2 input = show . flip (Map.!) "a" . evaluate . (("b", Forward (Const (compute1 input))):) . filter ((/= "b") . fst) . map (either undefined id . parse parseInstruction "") . lines $ input
