@@ -1,0 +1,65 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 124258e67239955cb87d991688e4583ae8789086458b54248567cc32792ac272
+
+name:           day08
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/mdm/day08#readme>
+homepage:       https://github.com/mdm/day08#readme
+bug-reports:    https://github.com/mdm/day08/issues
+author:         Marc Dominik Migge
+maintainer:     marcmigge@gmx.net
+copyright:      2021 Marc Dominik Migge
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/mdm/day08
+
+library
+  exposed-modules:
+      Lib
+  other-modules:
+      Paths_day08
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+    , parsec
+  default-language: Haskell2010
+
+executable day08-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_day08
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , day08
+    , parsec
+  default-language: Haskell2010
+
+test-suite day08-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_day08
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , day08
+    , parsec
+  default-language: Haskell2010
