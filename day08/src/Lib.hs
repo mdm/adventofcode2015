@@ -47,8 +47,8 @@ parseEmpty = do
 parseString :: Parser [(Char, Int, Int)]
 parseString = choice $ map try [parseChars, parseEmpty]
 
-overhead :: [(Char, Int, Int)] -> Int
-overhead chars = code chars - memory chars
+overhead1 :: [(Char, Int, Int)] -> Int
+overhead1 chars = code chars - memory chars
     where first (value, _, _) = value
           second (_, value, _) = value
           third (_, _, value) = value
@@ -56,8 +56,14 @@ overhead chars = code chars - memory chars
           code chars = 2 + sum (map third chars)
 
 part1 :: String -> String
--- part1 = show . map (either undefined id . parse parseString "") . lines
-part1 = show . sum . map (overhead . either undefined id . parse parseString "") . lines
+part1 = show . sum . map (overhead1 . either undefined id . parse parseString "") . lines
+
+encode xs = (2 + length (concatMap encode' xs), length xs)
+    where encode' '"' = "\\\""
+          encode' '\\' = "\\\\"
+          encode' x = [x]
+
+overhead2 xs = sum (map fst xs) - sum (map snd xs)
 
 part2 :: String -> String
-part2 = const ""
+part2 = show . overhead2 . map encode . lines
