@@ -66,9 +66,9 @@ maybeString _ = Nothing
 nonRedNumbers :: JSON -> [Int]
 nonRedNumbers (String _) = []
 nonRedNumbers (Number x) = [x]
-nonRedNumbers (Array xs) = concatMap allNumbers xs
+nonRedNumbers (Array xs) = concatMap nonRedNumbers xs
 nonRedNumbers (Object ps) | elem "red" $ mapMaybe (maybeString . snd) ps = []
-                          | otherwise = concatMap (allNumbers . snd) ps
+                          | otherwise = concatMap (nonRedNumbers . snd) ps
 
 part1 :: String -> String
 part1 = show . sum . allNumbers . either undefined id . parse parseJSON ""
