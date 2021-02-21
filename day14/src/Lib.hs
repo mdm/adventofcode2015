@@ -30,7 +30,11 @@ distance seconds r@(Reindeer _ speed stamina rest) | seconds >= stamina = stamin
 
 part1 :: String -> String
 part1 = show . maximum . map (distance 2503 . either undefined id . parse parseReindeer "") . lines
--- part1 = show . map (parse parseReindeer "") . lines
+
+score seconds rs = foldl update zeros [1..seconds]
+    where zeros = take (length rs) (repeat 0)
+          increments xs = map (\x -> if x == maximum xs then 1 else 0) xs
+          update ss t = zipWith (+) ss $ increments $ map (distance t) rs
 
 part2 :: String -> String
-part2 = const ""
+part2 = show . maximum . score 2503 . map (either undefined id . parse parseReindeer "") . lines
