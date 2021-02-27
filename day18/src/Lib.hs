@@ -34,5 +34,12 @@ step grid = Map.mapWithKey (update grid) grid
 part1 :: String -> String
 part1 = show . length . filter (/='.') . Map.elems . (!! 100) . iterate step . Map.unions . map insertRow . enumerate . map enumerate . lines
 
+markCorners :: Grid -> Grid
+markCorners grid = foldr insert grid corners
+    where insert coords = Map.insert coords '*'
+          (y0, x0) = minimum . Map.keys $ grid
+          (y1, x1) = maximum . Map.keys $ grid
+          corners = [(y0, x0), (y0, x1), (y1, x0), (y1, x1)]
+
 part2 :: String -> String
-part2 = const ""
+part2 = show . length . filter (/='.') . Map.elems . (!! 100) . iterate step . markCorners . Map.unions . map insertRow . enumerate . map enumerate . lines
