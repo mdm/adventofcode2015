@@ -8,6 +8,8 @@ import Text.Parsec (string, parse)
 import Text.Parsec.Char (letter)
 import Text.Parsec.Combinator (many1)
 import Data.List (nub, isPrefixOf)
+import Data.Tuple (swap)
+
 
 parseReplacement :: Parser (String, String)
 parseReplacement = do
@@ -27,9 +29,9 @@ part1 input = show . length . nub . filter (/=start) . concatMap (replace start 
     where (start:_:rules) = reverse . lines $ input
 
 part2 :: String -> String
-part2 input = show . length . takeWhile (notElem medicine) . iterate step $ ["e"]
+part2 input = show . length . takeWhile (notElem "e") . iterate step $ [medicine]
 -- part2 input = show . take 4 . iterate step $ ["e"]
     where (medicine:_:rules) = reverse . lines $ input
-          parsedRules = map (either undefined id . parse parseReplacement "") rules
+          parsedRules = map (swap . either undefined id . parse parseReplacement "") rules
           maxLen = length medicine
           step = concatMap (\x -> nub . filter (\y ->  y /= x && length y <= maxLen) . concatMap (replace x) $ parsedRules)
