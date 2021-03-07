@@ -74,6 +74,10 @@ parseMedicine rules ((Terminal x):xs) ((NonTerminal y):ys) = Nothing
 parseMedicine rules start@((NonTerminal x):xs) target@((Terminal y):ys) = choice rules start target
 parseMedicine rules start@((NonTerminal x):xs) target@((NonTerminal y):ys) = msum [if x == y then parseMedicine rules xs ys else Nothing, choice rules start target]
 
+parseQuickly rules x ys = maximum' $ choice' (parseLeft left) (parseRight right)
+    where (left, ar:right) = break (==(Terminal "Ar")) ys
+          
+
 part2 :: String -> String
 part2 input = show $ parseMedicine (sortBy rhsLength parsedRules) (tokenize parsedRules "e") (tokenize parsedRules medicine)
 -- part2 input = show $ sortBy rhsLength parsedRules
