@@ -74,12 +74,25 @@ parseMedicine rules ((Terminal x):xs) ((NonTerminal y):ys) = Nothing
 parseMedicine rules start@((NonTerminal x):xs) target@((Terminal y):ys) = choice rules start target
 parseMedicine rules start@((NonTerminal x):xs) target@((NonTerminal y):ys) = msum [if x == y then parseMedicine rules xs ys else Nothing, choice rules start target]
 
-parseQuickly rules x ys = maximum' $ choice' (parseLeft left) (parseRight right)
+withoutTerminals [] = True
+withoutTerminals ((Terminal x):xs) = False
+withoutTerminals ((NonTerminal x):xs) = withoutTerminals xs
+
+parseRight rules x ys = map applyRule matchingRules
+    where matchingRules = filter (withoutTerminals . tokenize rules . snd) . filter ( . (==x) . fst) rules
+          applyRule (lhs, _:rhs:[]) = (lhs, parseRight' rules rhs ys)
+
+choice' :: [(String, String)] -> String -> [Token] -> [Token] Maybe Int
+choice' rules x left right = 
+    where matchingRules = filter ((==x) . fst) rules
+
+parseQuickly :: [(String, String)] -> String -> [Token] Maybe Int
+parseQuickly rules x ys = maximum' $ choice' (left ++ [ar]) right
     where (left, ar:right) = break (==(Terminal "Ar")) ys
           
 
 part2 :: String -> String
-part2 input = show $ parseMedicine (sortBy rhsLength parsedRules) (tokenize parsedRules "e") (tokenize parsedRules medicine)
--- part2 input = show $ sortBy rhsLength parsedRules
+-- part2 input = show $ parseMedicine (sortBy rhsLength parsedRules) (tokenize parsedRules "e") (tokenize parsedRules medicine)
+part2 input = show $ parseQuickly parsedRules "e" (tokenize parsedRules medicine)
     where (medicine:_:rules) = reverse . lines $ input
           parsedRules = map (either undefined id . parse parseReplacement "") rules
