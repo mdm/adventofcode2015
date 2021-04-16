@@ -68,10 +68,10 @@ prependToken rules acc xs = if null acc then xs else (makeToken $ reverse acc):x
           makeToken ys | ys `elem` lefts = NonTerminal ys
                        | otherwise = Terminal ys
 
-tokenize2 :: [(String, String)] -> String -> String -> [Token]
-tokenize2 rules acc [] = prependToken rules acc []
-tokenize2 rules acc (x:xs) | isAsciiUpper x = prependToken rules acc $ tokenize2 rules [x] xs
-                           | otherwise = tokenize2 rules (x:acc) xs
+tokenize :: [(String, String)] -> String -> String -> [Token]
+tokenize rules acc [] = prependToken rules acc []
+tokenize rules acc (x:xs) | isAsciiUpper x = prependToken rules acc $ tokenize rules [x] xs
+                          | otherwise = tokenize rules (x:acc) xs
 
 showTokens :: [Token] -> [String]
 showTokens [] = []
@@ -97,7 +97,19 @@ splitInput skip acc (x@(Terminal t):xs) | t == "Rn" && not skip = prependAcc acc
     where (combined, rest) =  combineNested xs 0 []
 splitInput depth acc (x@(NonTerminal _):xs) = splitInput depth (x:acc) xs
 
+parsePartial :: [(String, String)] -> [Token] -> [(Int, Token)]
+parsePartial rules input | withTerminals input = map (\(d, t) -> (d + 1, t)) $ trace ("***" ++ show input) parseInput rules input
+                         | otherwise = trace (show input ++ "\n" ++ show (parsePure rules input)) parsePure rules input
+
+parseInput :: [(String, String)] -> [Token] -> [(Int, Token)]
+parseInput rules input = deepest $ concatMap (parsePartial rules) filteredParts
+    where parts = splitInput False [] input
+          filteredParts = filter (\p -> length p > 1 || not (withTerminals p)) parts
+
 part2 :: String -> String
-part2 input = show $ map showTokens $ splitInput False [] $ tokenize2 parsedRules "" medicine
+-- part2 input = show $ showTokens $ (!!20) $ splitInput False [] $ tokenize parsedRules "" medicine
+part2 input = show $ map showTokens $ splitInput False [] $ tokenize parsedRules "" medicine
+-- part2 input = show $ map fst $ parseInput parsedRules $ tokenize parsedRules "" medicine
+-- part2 input = show $ parseInput parsedRules $ tokenize parsedRules "" "TiBSiTh"
     where (medicine:_:rules) = reverse . lines $ input
           parsedRules = map (either undefined id . parse parseReplacement "") rules
