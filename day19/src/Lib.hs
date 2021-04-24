@@ -47,6 +47,19 @@ parsePure rules [x] = [(0, [x])]
 parsePure rules input = nub $ concatMap (map plusOne . parsePure rules) (allReductions rules [] input)
     where plusOne (depth, x) = (depth + 1, x)
 
+replace2 :: [Token] -> ([Token], [Token]) -> [[Token]]
+replace2 [] _ = [[]]
+replace2 start@(x:xs) rule@(input, output) | output `isPrefixOf` start = (input ++ rest):map (x:) (replace2 xs rule)
+                                           | otherwise = map (x:) (replace2 xs rule)
+    where rest = drop (length output) start
+
+parsePure2 :: [(String, String)] -> [Token] -> [(Int, [Token])]
+parsePure2 rules [x] = [(0, [x])]
+-- parsePure2 rules input = nub $ concatMap (map plusOne . parsePure2 rules) $ filter (/=input) $ concatMap (\r -> trace (show input ++ " " ++ show r) $ replace2 input r) tokenizedRules
+parsePure2 rules input = nub $ concatMap (map plusOne . parsePure2 rules) $ filter (/=input) $ concatMap (replace2 input) tokenizedRules
+    where plusOne (depth, x) = (depth + 1, x)
+          tokenizedRules = zip (map (tokenize rules "" . fst) rules) (map (tokenize rules "" . snd) rules)
+
 withTerminals :: [Token] -> Bool
 withTerminals [] = False
 withTerminals ((Terminal x):xs) = True
@@ -97,9 +110,12 @@ splitInput skip acc (x@(Terminal t):xs) | (t == "Rn" || t == "CRn") && not skip 
     where (combined, rest) =  combineNested xs 0 []
 splitInput skip acc (x@(NonTerminal _):xs) = splitInput skip (x:acc) xs
 
+isTerminal (Terminal _) = True
+isTerminal (NonTerminal _) = False
+
 parsePartial :: [(String, String)] -> [Token] -> (Int, [Token])
-parsePartial rules (x@(Terminal _):xs) = (0, x:xs)
-parsePartial rules (x@(NonTerminal _):xs) = parseInput rules (x:xs)
+parsePartial rules input | isTerminal (head input) || isTerminal (last input) = (0, input)
+                         | otherwise = parseInput rules input
 
 parseInput :: [(String, String)] -> [Token] -> (Int, [Token])
 parseInput rules input | length parts > 1 = (stepOneDepth + stepTwoDepth, stepTwoOutput)
@@ -112,8 +128,9 @@ parseInput rules input | length parts > 1 = (stepOneDepth + stepTwoDepth, stepTw
 
 part2 :: String -> String
 -- part2 input = show $ showTokens $ (!!20) $ splitInput False [] $ tokenize parsedRules "" medicine
-part2 input = show $ map showTokens $ splitInput False [] $ tokenize parsedRules "" medicine
--- part2 input = show $ map fst $ parseInput parsedRules $ tokenize parsedRules "" medicine
+-- part2 input = show $ map showTokens $ splitInput False [] $ tokenize parsedRules "" medicine
+part2 input = show $ parseInput parsedRules $ tokenize parsedRules "" medicine
 -- part2 input = show $ parseInput parsedRules $ tokenize parsedRules "" "TiBSiTh"
+-- part2 input = show $ parseInput parsedRules $ tokenize parsedRules "" "TiB"
     where (medicine:_:rules) = reverse . lines $ input
           parsedRules = map (either undefined id . parse parseReplacement "") rules
