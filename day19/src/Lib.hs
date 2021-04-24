@@ -7,12 +7,7 @@ import Text.Parsec.String (Parser)
 import Text.Parsec (string, parse)
 import Text.Parsec.Char (letter)
 import Text.Parsec.Combinator (many1)
-import Data.List (nub, partition, isPrefixOf, isSubsequenceOf, tails, sortBy)
-import Data.Tuple (swap)
-import Data.Maybe (mapMaybe)
-import Control.Monad (msum)
-import Debug.Trace (trace, traceShow)
-import Data.Foldable (minimumBy, maximumBy)
+import Data.List (nub, isPrefixOf)
 import Data.Char (isAsciiUpper)
 
 
@@ -50,6 +45,5 @@ minReductions t r depth acc (x:xs) | x == "Rn" = if depth == 0 then minReduction
                                    | otherwise = if depth == 0 then minReductions (t + 1) r depth acc xs else minReductions t r depth (x:acc) xs
 
 part2 :: String -> String
-part2 input = show $ minReductions 0 0 0 [] $ tokenize "" medicine
-    where (medicine:_:rules) = reverse . lines $ input
-          parsedRules = map (either undefined id . parse parseReplacement "") rules
+part2 = show . minReductions 0 0 0 [] . tokenize "" . last . lines
+
