@@ -51,10 +51,12 @@ parseBoss = do
                 arm <- many1 digit
                 return (read hp, read dmg, read arm)
 
+playerTurn :: (Int, Int, Int) -> Int -> [(Int, Int, Int)] -> Bool
 playerTurn (bhp, bdmg, barm) hp equipment | hp <= 0 = True
                                           | otherwise = bossTurn (newHp, bdmg, barm) hp equipment
     where newHp = bhp - max 1 (totalDamage equipment - barm)
 
+bossTurn :: (Int, Int, Int) -> Int -> [(Int, Int, Int)] -> Bool
 bossTurn (bhp, bdmg, barm) hp equipment | bhp <= 0 = False
                                         | otherwise = playerTurn (bhp, bdmg, barm) newHp equipment
     where newHp = hp - max 1 (bdmg - totalArmor equipment)
