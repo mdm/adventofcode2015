@@ -1,0 +1,7 @@
+day22-0.1.0.0: unregistering (local file changes: src/Lib.hs)
+day22> configure (lib + exe)
+Configuring day22-0.1.0.0...
+day22> build (lib + exe)
+Preprocessing library for day22-0.1.0.0..
+Building library for day22-0.1.0.0..
+[2 of 2] Compiling Lib
