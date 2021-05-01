@@ -4,102 +4,106 @@ module Lib
     ) where
 
 import Text.Parsec.String (Parser)
-import Text.Parsec (string, parse)
+import Text.Parsec (char, string, parse, try)
 import Text.Parsec.Char (digit)
-import Text.Parsec.Combinator (many1)
+import Text.Parsec.Combinator (choice, many1)
 import Debug.Trace(trace)
 import Data.Maybe (mapMaybe)
+import Data.Array ((!), listArray, bounds, inRange, Array)
 
+data Register = RegA | RegB
+    deriving Show  
+    
+data Instruction = Hlf Register | Tpl Register | Inc Register | Jmp Int | Jie Register Int | Jio Register Int
+    deriving Show  
 
-data State = State {
-  hard :: Bool
-, bossHp :: Int
-, bossDamage :: Int
-, playerHp :: Int
-, manaAvailable :: Int
-, manaSpent :: Int
-, shield :: Int
-, poison :: Int
-, recharge :: Int
-} deriving Show
+parseRegA :: Parser Register
+parseRegA = do
+              char 'a'
+              return RegA
 
-makeState hard (hp, dmg) = State hard hp dmg 50 500 0 0 0 0
+parseRegB :: Parser Register
+parseRegB = do
+              char 'b'
+              return RegB
 
-parseBoss :: Parser (Int, Int)
-parseBoss = do
-                string "Hit Points: "
-                hp <- many1 digit
-                string "\nDamage: "
-                dmg <- many1 digit
-                return (read hp, read dmg)
+parseHlf :: Parser Instruction
+parseHlf = do
+             string "hlf "
+             reg <- choice $ map try [parseRegA, parseRegB]
+             return $ Hlf reg
 
+parseTpl :: Parser Instruction
+parseTpl = do
+             string "tpl "
+             reg <- choice $ map try [parseRegA, parseRegB]
+             return $ Tpl reg
 
-applyHardMode :: Bool -> State -> State
-applyHardMode player state = if player && hard state then state { playerHp = playerHp state - 1 } else state
+parseInc :: Parser Instruction
+parseInc = do
+             string "inc "
+             reg <- choice $ map try [parseRegA, parseRegB]
+             return $ Inc reg
 
-applyPoison :: State -> State
-applyPoison state = if poison state > 0 then state { bossHp = bossHp state - 3 } else state
+parsePositiveOffset :: Parser Int
+parsePositiveOffset = do
+                        char '+'
+                        offset <- many1 digit 
+                        return $ read offset
 
-applyRecharge :: State -> State
-applyRecharge state = if recharge state > 0 then state { manaAvailable = manaAvailable state + 101 } else state
+parseNegativeOffset :: Parser Int
+parseNegativeOffset = do
+                        char '-'
+                        offset <- many1 digit 
+                        return $ -read offset
 
-applyDecrement :: State -> State
-applyDecrement state = state { shield = max 0 (shield state - 1), poison = max 0 (poison state - 1), recharge = max 0 (recharge state - 1) }
+parseJmp :: Parser Instruction
+parseJmp = do
+             string "jmp "
+             offset <- choice $ map try [parsePositiveOffset, parseNegativeOffset]
+             return $ Jmp offset
 
-applyEffects :: Bool -> State -> State
-applyEffects player = applyDecrement . applyRecharge . applyPoison . applyHardMode player
+parseJie :: Parser Instruction
+parseJie = do
+             string "jie "
+             reg <- choice $ map try [parseRegA, parseRegB]
+             string ", "
+             offset <- choice $ map try [parsePositiveOffset, parseNegativeOffset]
+             return $ Jie reg offset
 
-canMagicMissile :: State -> Bool
-canMagicMissile state = manaAvailable state >= 53
+parseJio :: Parser Instruction
+parseJio = do
+             string "jio "
+             reg <- choice $ map try [parseRegA, parseRegB]
+             string ", "
+             offset <- choice $ map try [parsePositiveOffset, parseNegativeOffset]
+             return $ Jio reg offset
 
-castMagicMissile :: State -> State
-castMagicMissile state = state { manaAvailable = manaAvailable state - 53, manaSpent = manaSpent state + 53, bossHp = bossHp state - 4 }
+parseInstruction :: Parser Instruction
+parseInstruction = do
+                     choice $ map try [parseHlf, parseTpl, parseInc, parseJmp, parseJie, parseJio]
 
-canDrain :: State -> Bool
-canDrain state = manaAvailable state >= 73
+execute' :: Int -> Int -> Int -> Array Int Instruction -> Instruction -> Int
+execute' pc a b prog (Hlf RegA) = execute (pc + 1) (a `div` 2) b prog
+execute' pc a b prog (Hlf RegB) = execute (pc + 1) a (b `div` 2) prog
+execute' pc a b prog (Tpl RegA) = execute (pc + 1) (a * 3) b prog
+execute' pc a b prog (Tpl RegB) = execute (pc + 1) a (b * 3) prog
+execute' pc a b prog (Inc RegA) = execute (pc + 1) (a + 1) b prog
+execute' pc a b prog (Inc RegB) = execute (pc + 1) a (b + 1) prog
+execute' pc a b prog (Jmp offset) = execute (pc + offset) a b prog
+execute' pc a b prog (Jie RegA offset) = if even a then execute (pc + offset) a b prog else execute (pc + 1) a b prog
+execute' pc a b prog (Jie RegB offset) = if even b then execute (pc + offset) a b prog else execute (pc + 1) a b prog
+execute' pc a b prog (Jio RegA offset) = if a == 1 then execute (pc + offset) a b prog else execute (pc + 1) a b prog
+execute' pc a b prog (Jio RegB offset) = if b == 1 then execute (pc + offset) a b prog else execute (pc + 1) a b prog
 
-castDrain :: State -> State
-castDrain state = state { manaAvailable = manaAvailable state - 73, manaSpent = manaSpent state + 73, bossHp = bossHp state - 2, playerHp = playerHp state + 2 }
+execute :: Int -> Int -> Int -> Array Int Instruction -> Int
+execute pc a b prog | inRange (bounds prog) pc = {- trace (show pc ++ " " ++ show a ++ " " ++ show b ++ " " ++ show (prog ! pc)) -} execute' pc a b prog (prog ! pc)
+                    | otherwise = b
 
-canShield :: State -> Bool
-canShield state = manaAvailable state >= 113 && shield state == 0
-
-castShield :: State -> State
-castShield state = state { manaAvailable = manaAvailable state - 113, manaSpent = manaSpent state + 113, shield = 6 }
-
-canPoison :: State -> Bool
-canPoison state = manaAvailable state >= 173 && poison state == 0
-
-castPoison :: State -> State
-castPoison state = state { manaAvailable = manaAvailable state - 173, manaSpent = manaSpent state + 173, poison = 6 }
-
-canRecharge :: State -> Bool
-canRecharge state = manaAvailable state >= 229 && recharge state == 0
-
-castRecharge :: State -> State
-castRecharge state = state { manaAvailable = manaAvailable state - 229, manaSpent = manaSpent state + 229, recharge = 5 }
-
-spells :: [(State -> Bool, State -> State)]
--- spells = [(canMagicMissile, castMagicMissile), (canDrain, castDrain), (canShield, castShield), (canPoison, castPoison), (canRecharge, castRecharge)]
-spells = [(canMagicMissile, castMagicMissile), (canDrain, castDrain), (canShield, castShield), (canPoison, castPoison)]
-
-playerTurn :: State -> Maybe Int
-playerTurn state | playerHp afterEffects <= 0 = Nothing
-                 | null availableSpells = Nothing
-                 | null futures = if canRecharge afterEffects then bossTurn $ castRecharge afterEffects else Nothing
-                 | otherwise = {- trace ("P " ++ show afterEffects) -} Just $ minimum futures
-    where afterEffects = applyEffects True state
-          availableSpells = map snd . filter (\x -> fst x afterEffects) $ spells
-          futures = mapMaybe (\s -> bossTurn $ s afterEffects) availableSpells
-
-bossTurn :: State -> Maybe Int
-bossTurn state | bossHp afterEffects <= 0 = Just $ manaSpent state
-               | otherwise = {- trace ("B " ++ show afterEffects) -} playerTurn $ afterEffects { playerHp = newHp }
-    where afterEffects = applyEffects False state
-          newHp = if shield state > 0 then playerHp state - max 1 (bossDamage state - 7) else playerHp state - bossDamage state
+makeArray xs = listArray (0, length xs - 1) xs
 
 part1 :: String -> String
-part1 = show . maybe undefined id . playerTurn . makeState False . either undefined id . parse parseBoss ""
+part1 = show . execute 0 0 0 . makeArray . map (either undefined id . parse parseInstruction "") . lines
 
 part2 :: String -> String
-part2 = show . maybe undefined id . playerTurn . makeState True . either undefined id . parse parseBoss ""
+part2 = show . execute 0 1 0 . makeArray . map (either undefined id . parse parseInstruction "") . lines
